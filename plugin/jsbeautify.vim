@@ -6,18 +6,20 @@ let loaded_jsbeautify = 3
 
 
 function! s:trim_output()
-	while len(s:output) > 0 && (s:output[len(s:output)-1] == " " || s:output[len(s:output)-1] == s:indent_string)
+	let output_length = len(s:output)
+	while output_length > 0 && (s:output[output_length-1] == " " || s:output[output_length-1] == s:indent_string)
 		call remove(s:output, -1)
 	endwhile
 endfunction
 
 function! s:print_newline(ignore_repeated) 
+	let output_length = len(s:output)
 	let s:if_line_flag = 0
 	call s:trim_output()
-	if len(s:output)==0
+	if output_length==0
 		return
 	endif
-	if s:output[len(s:output)-1] != "\n" || !a:ignore_repeated
+	if s:output[output_length-1] != "\n" || !a:ignore_repeated
 		call add(s:output, "\n")
 	endif
 	let index = 0
@@ -28,9 +30,10 @@ function! s:print_newline(ignore_repeated)
 endfunction
 
 function! s:print_space()
+	let output_length = len(s:output)
 	let last_output = " "
-	if len(s:output) > 0
-		let last_output = s:output[len(s:output) - 1]
+	if output_length > 0
+		let last_output = s:output[output_length - 1]
 	endif
 	if last_output != " " && last_output != "\n" && last_output != s:indent_string
 		call add(s:output, " ")
@@ -52,7 +55,8 @@ function! s:unindent()
 endfunction
 
 function! s:remove_indent()
-	if len(s:output)>0 && s:output[len(s:output) -1] == s:indent_string
+	let output_length = len(s:output)
+	if output_length>0 && s:output[output_length -1] == s:indent_string
 		call remove(s:output, -1)
 	endif
 endfunction
