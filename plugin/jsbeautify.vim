@@ -9,13 +9,14 @@ function! s:trim_output()
 	let output_length = len(s:output)
 	while output_length > 0 && (s:output[output_length-1] == " " || s:output[output_length-1] == s:indent_string)
 		call remove(s:output, -1)
+		let output_length = len(s:output)
 	endwhile
 endfunction
 
 function! s:print_newline(ignore_repeated) 
-	let output_length = len(s:output)
 	let s:if_line_flag = 0
 	call s:trim_output()
+	let output_length = len(s:output)
 	if output_length==0
 		return
 	endif
