@@ -78,7 +78,7 @@ endfunction
 function! s:get_next_token()
 	let n_newlines = 0
 
-	if s:parser_pos >= len(s:input)
+	if s:parser_pos >= s:input_length
 		return ["", "TK_EOF"]
 	endif
 
@@ -86,7 +86,7 @@ function! s:get_next_token()
 	let s:parser_pos += 1
 
 	while s:in_array(c, s:whitespace) 
-		if s:parser_pos >= len(s:input)
+		if s:parser_pos >= s:input_length
 			return ["", "TK_EOF"]
 		endif
 
@@ -110,17 +110,17 @@ function! s:get_next_token()
 	endif
 
 	if s:in_array(c, s:wordchar)
-		if s:parser_pos < len(s:input)
+		if s:parser_pos < s:input_length
 			while s:in_array(s:input[s:parser_pos], s:wordchar)
 				let c .= s:input[s:parser_pos]
 				let s:parser_pos += 1
-				if s:parser_pos == len(s:input)
+				if s:parser_pos == s:input_length
 					break
 				endif
 			endwhile
 		endif
 
-		"if s:parser_pos != len(s:input) && c =~ /^[0-9]+[Ee]$/ && (s:input[s:parser_pos] == "-" || s:input[s:parser_pos] == "+")
+		"if s:parser_pos != s:input_length && c =~ /^[0-9]+[Ee]$/ && (s:input[s:parser_pos] == "-" || s:input[s:parser_pos] == "+")
 			"let sign = s:input[s:parser_pos]
 			"let s:parser_pos += 1
 
@@ -161,11 +161,11 @@ function! s:get_next_token()
 		let comment = ""
 		if s:input[s:parser_pos] == "*"
 			let s:parser_pos += 1
-			if s:parser_pos < len(s:input) 
-				while !(s:input[s:parser_pos] == "*" && s:parser_pos + 1 < len(s:input) && s:input[s:parser_pos + 1] == "/" && s:parser_pos < len(s:input))
+			if s:parser_pos < s:input_length
+				while !(s:input[s:parser_pos] == "*" && s:parser_pos + 1 < s:input_length && s:input[s:parser_pos + 1] == "/" && s:parser_pos < s:input_length)
 					let comment .= s:input[s:parser_pos]
 					let s:parser_pos += 1
-					if s:parser_pos >= len(s:input)
+					if s:parser_pos >= s:input_length
 						break
 					endif
 				endwhile
@@ -180,7 +180,7 @@ function! s:get_next_token()
 			while s:input[s:parser_pos] != "\r" && s:input[s:parser_pos] != "\n"
 				let comment .= s:input[s:parser_pos]
 				let s:parser_pos += 1
-				if s:parser_pos >= len(s:input)
+				if s:parser_pos >= s:input_length
 					break
 				endif
 			endwhile
@@ -197,7 +197,7 @@ function! s:get_next_token()
 		let esc = 0
 		let resulting_string = c
 
-		if s:parser_pos < len(s:input)
+		if s:parser_pos < s:input_length
 			while esc || s:input[s:parser_pos] != sep
 				let resulting_string .= s:input[s:parser_pos]
 				if !esc
@@ -206,7 +206,7 @@ function! s:get_next_token()
 					let esc = 0
 				endif
 				let s:parser_pos += 1
-				if s:parser_pos >= len(s:input)
+				if s:parser_pos >= s:input_length
 					return [resulting_string, "TK_STRING"]
 				endif
 			endwhile
@@ -218,7 +218,7 @@ function! s:get_next_token()
 
 		if sep == "/"
 			
-			while s:parser_pos < len(s:input) && s:in_array(s:input[s:parser_pos], s:wordchar)
+			while s:parser_pos < s:input_length && s:in_array(s:input[s:parser_pos], s:wordchar)
 				let resulting_string .= s:input[s:parser_pos]
 				let s:parser_pos += 1
 			endwhile
@@ -228,12 +228,12 @@ function! s:get_next_token()
 
 	if c == "#"
 		let sharp = "#"
-		if s:parser_pos < len(s:input) && s:in_array(s:input[s:parser_pos], s:digits)
+		if s:parser_pos < s:input_length && s:in_array(s:input[s:parser_pos], s:digits)
 			let c = s:input[s:parser_pos]
 			let sharp .= c
 			let s:parser_pos += 1
 
-			while s:parser_pos < len(s:input) && c != "#" && c !="="
+			while s:parser_pos < s:input_length && c != "#" && c !="="
 				let c = s:input[s:parser_pos]
 				let sharp .= c
 				let s:parser_pos += 1
@@ -261,10 +261,10 @@ function! s:get_next_token()
 	endif
 
 	if s:in_array(c, s:punct)
-		while s:parser_pos < len(s:input) && s:in_array(c . s:input[s:parser_pos], s:punct)
+		while s:parser_pos < s:input_length && s:in_array(c . s:input[s:parser_pos], s:punct)
 			let c .= s:input[s:parser_pos]
 			let s:parser_pos += 1
-			if s:parser_pos >= len(s:input)
+			if s:parser_pos >= s:input_length
 				break
 			endif
 		endwhile
@@ -310,6 +310,7 @@ function! g:Jsbeautify()
 	let lines = getline(1, "$")
 	let s:input = join(lines, "\n")
 	"let s:input = a:js_source_text
+	let s:input_length = len(s:input)
 	
 	let s:last_word = "" "last 'TK_WORD' passed
 	let s:last_type = "TK_START_EXPR" "last token type
@@ -344,7 +345,6 @@ function! g:Jsbeautify()
 		
 		try
 			if s:token_type == "TK_START_EXPR"
-				let s:var_line = 0
 				call s:set_mode("EXPRESSION")
 				if s:last_text == ";"
 					call s:print_newline(1)
@@ -470,8 +470,10 @@ function! g:Jsbeautify()
 				let s:last_word = s:token_text
 
 				if s:token_text == "var"
-					let s:var_line = 1
-					let s:var_line_tainted = 0
+					if	s:last_type != "TK_START_EXPR" || len(s:output) == 1
+						let s:var_line = 1
+						let s:var_line_tainted = 0
+					endif
 				endif
 
 				if s:token_text == "if" || s:token_text == "else"
@@ -522,20 +524,25 @@ function! g:Jsbeautify()
 				if s:token_text == ","
 					if s:var_line
 						if s:var_line_tainted
-							call s:print_token()
+							call s:indent()
 							call s:print_newline(1)
+							call s:unindent()
+							call s:print_token()
+							call s:print_space()
 							let s:var_line_tainted = 0
 						else
 							call s:print_token()
 							call s:print_space()
 						endif
 					elseif s:last_type == "TK_END_BLOCK"
-						call s:print_token()
 						call s:print_newline(1)
+						call s:print_token()
+						call s:print_space()
 					else
 						if s:current_mode == "BLOCK"
-							call s:print_token()
-							call s:print_newline(1)
+								call s:print_newline(1)
+								call s:print_token()
+								call s:print_space()
 						else
 							" EXPR od DO_BLOCK
 							call s:print_token()
